@@ -3,10 +3,11 @@ package miage.fa.cara
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.concurrent.duration._
 
+import scala.collection.mutable
+import scala.concurrent.duration._
 import scala.concurrent.Await
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 
 
 object Reader {
@@ -19,17 +20,30 @@ class Reader extends Actor {
 
   def receive = {
     case Reader.Initialize(textToRead) =>
-      val source = Source.fromFile(textToRead)
-      for (line <- source.getLines()) {
-        router ! Router.RouteLine(line)
-      }
-      implicit val timeout: Timeout = 10 seconds
-      val future = router ? Router.GetFullMap
-      println("Result : " + Await.result(future, timeout.duration).asInstanceOf[collection.mutable.Map[String, Int]])
-      source.close
-      println("Application has terminated, shutting down system")
-      context.system.terminate()
-      scala.sys.exit()
+      val source: BufferedSource = SendToRouteEachLineOfFile(textToRead)
+      takeAndPrintResultFromCounter
+      closeApplication(source)
+  }
+
+  private def closeApplication(source: BufferedSource) = {
+    source.close
+    println("Application has terminated, shutting down system")
+    context.system.terminate()
+    scala.sys.exit()
+  }
+
+  private def takeAndPrintResultFromCounter = {
+    implicit val timeout: Timeout = 10 seconds
+    val future = router ? Router.GetFullMap
+    println("Result : " + Await.result(future, timeout.duration).asInstanceOf[mutable.Map[String, Int]])
+  }
+
+  private def SendToRouteEachLineOfFile(textToRead: String) = {
+    val source = Source.fromFile(textToRead)
+    for (line <- source.getLines()) {
+      router ! Router.RouteLine(line)
+    }
+    source
   }
 }
 
