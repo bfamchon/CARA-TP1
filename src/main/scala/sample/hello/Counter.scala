@@ -14,9 +14,7 @@ class Counter extends Actor {
   def receive = {
     case Counter.ManageRows(row) =>
       row.split(" ").foreach(word => addWordToMap(word))
-      println("ManageRows: " +occurencesByWord)
     case Counter.GetOccurrences =>
-      println("GetOccurences: " + occurencesByWord)
       sender ! occurencesByWord
   }
   private def addWordToMap(word: String): Unit = {

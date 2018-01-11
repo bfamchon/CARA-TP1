@@ -24,7 +24,7 @@ class Reader extends Actor {
     implicit val timeout: Timeout = 10 seconds
 
     val future = router ? Router.GetFullMap
-    println("Full map: " + Await.result(future, timeout.duration).asInstanceOf[collection.mutable.Map[String, Int]])
+    println("Result : " + Await.result(future, timeout.duration).asInstanceOf[collection.mutable.Map[String, Int]])
     source.close
   }
 
