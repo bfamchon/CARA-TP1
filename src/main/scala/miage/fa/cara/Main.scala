@@ -1,4 +1,4 @@
-package sample.hello
+package miage.fa.cara
 
 import akka.actor.ActorSystem
 import akka.actor.Props

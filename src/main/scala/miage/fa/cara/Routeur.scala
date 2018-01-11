@@ -1,16 +1,15 @@
-package sample.hello
+package miage.fa.cara
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 
+import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 
 object Router {
-
-  final case class GetRow(row: String)
 
   final case class RouteLine(line: String)
 
@@ -35,18 +34,24 @@ class Router extends Actor with ActorLogging {
   }
 
   def receive = {
-    case Router.GetRow(number) =>
-      log.info("There is this much readers: " + number)
     case Router.RouteLine(line) =>
       arrayOfCountersRef(cmp % arrayOfCountersRef.length) ! Counter.ManageRows(line)
       cmp += 1
     case Router.GetFullMap =>
       arrayOfCountersRef.foreach(actor => {
-        val future = actor ? Counter.GetOccurrences
-        val result = Await.result(future, timeout.duration).asInstanceOf[collection.mutable.Map[String, Int]]
-        occurencesByWord = occurencesByWord ++ result.map { case (k, v) => k -> (v + occurencesByWord.getOrElse(k, 0)) }
+        val result: mutable.Map[String, Int] = askResultToCounter(actor)
+        occurencesByWord = mergeMapWithSumOfValue(result)
       })
     sender ! occurencesByWord
   }
 
+  private def askResultToCounter(actor: ActorRef) = {
+    val future = actor ? Counter.GetOccurrences
+    val result = Await.result(future, timeout.duration).asInstanceOf[mutable.Map[String, Int]]
+    result
+  }
+
+  private def mergeMapWithSumOfValue(result: mutable.Map[String, Int]) = {
+    occurencesByWord ++ result.map { case (k, v) => k -> (v + occurencesByWord.getOrElse(k, 0)) }
+  }
 }
