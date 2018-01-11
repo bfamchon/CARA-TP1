@@ -1,13 +1,13 @@
 package miage.fa.cara
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import scala.io.{BufferedSource, Source}
+import scala.io.Source
 
 
 object Reader {
@@ -20,13 +20,12 @@ class Reader extends Actor {
 
   def receive = {
     case Reader.Initialize(textToRead) =>
-      val source: BufferedSource = SendToRouteEachLineOfFile(textToRead)
+      SendToRouteEachLineOfFile(textToRead)
       takeAndPrintResultFromCounter
-      closeApplication(source)
+      closeApplication
   }
 
-  private def closeApplication(source: BufferedSource) = {
-    source.close
+  private def closeApplication = {
     println("Application has terminated, shutting down system")
     context.system.terminate()
     scala.sys.exit()
@@ -43,7 +42,7 @@ class Reader extends Actor {
     for (line <- source.getLines()) {
       router ! Router.RouteLine(line)
     }
-    source
+    source.close
   }
 }
 
