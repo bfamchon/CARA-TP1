@@ -1,6 +1,6 @@
 package miage.fa.cara
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -16,12 +16,12 @@ object Reader {
 
 class Reader extends Actor {
   val system = ActorSystem("Main")
-  var router = system.actorOf(Props[Router], "Routeur")
+  var router: ActorRef = system.actorOf(Props[Router], "Routeur")
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case Reader.Initialize(textToRead) =>
       SendToRouteEachLineOfFile(textToRead)
-      takeAndPrintResultFromCounter
+      takeAndPrintResultFromCounter()
       closeApplication
   }
 
@@ -31,13 +31,13 @@ class Reader extends Actor {
     scala.sys.exit()
   }
 
-  private def takeAndPrintResultFromCounter = {
+  private def takeAndPrintResultFromCounter(): Unit = {
     implicit val timeout: Timeout = 10 seconds
     val future = router ? Router.GetFullMap
     println("Result : " + Await.result(future, timeout.duration).asInstanceOf[mutable.Map[String, Int]])
   }
 
-  private def SendToRouteEachLineOfFile(textToRead: String) = {
+  private def SendToRouteEachLineOfFile(textToRead: String): Unit = {
     val source = Source.fromFile(textToRead)
     for (line <- source.getLines()) {
       router ! Router.RouteLine(line)

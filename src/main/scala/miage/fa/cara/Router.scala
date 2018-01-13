@@ -20,7 +20,7 @@ object Router {
 class Router extends Actor with ActorLogging {
   var arrayOfCountersRef = new Array[ActorRef](3)
   val system = ActorSystem("Main")
-  var occurencesByWord = collection.mutable.Map[String, Int]().withDefaultValue(0)
+  var instancesByWord: mutable.Map[String, Int] = collection.mutable.Map[String, Int]().withDefaultValue(0)
   var cmp = 0
   implicit val timeout: Timeout = 5 seconds
 
@@ -30,19 +30,20 @@ class Router extends Actor with ActorLogging {
     arrayOfCountersRef(1) = system.actorOf(Props[Counter], "Counter1")
     arrayOfCountersRef(2) = system.actorOf(Props[Counter], "Counter2")
 
-    log.info("Counter are initialized !")
+    log.info("3 Counters are initialized !")
   }
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case Router.RouteLine(line) =>
+      // Send to a counter ( from Counter0 to Counter2 in function of cmp % length )
       arrayOfCountersRef(cmp % arrayOfCountersRef.length) ! Counter.ManageRows(line)
       cmp += 1
     case Router.GetFullMap =>
       arrayOfCountersRef.foreach(actor => {
         val result: mutable.Map[String, Int] = askResultToCounter(actor)
-        occurencesByWord = mergeMapWithSumOfValue(result)
+        instancesByWord = mergeMapWithSumOfValue(result)
       })
-    sender ! occurencesByWord
+    sender ! instancesByWord
   }
 
   private def askResultToCounter(actor: ActorRef) = {
@@ -52,6 +53,6 @@ class Router extends Actor with ActorLogging {
   }
 
   private def mergeMapWithSumOfValue(result: mutable.Map[String, Int]) = {
-    occurencesByWord ++ result.map { case (k, v) => k -> (v + occurencesByWord.getOrElse(k, 0)) }
+    instancesByWord ++ result.map { case (k, v) => k -> (v + instancesByWord.getOrElse(k, 0)) }
   }
 }

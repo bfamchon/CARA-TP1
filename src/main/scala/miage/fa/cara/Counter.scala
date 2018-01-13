@@ -2,6 +2,8 @@ package miage.fa.cara
 
 import akka.actor.Actor
 
+import scala.collection.mutable
+
 object Counter {
   final case class ManageRows(row: String)
   case object GetOccurrences
@@ -9,15 +11,15 @@ object Counter {
 }
 
 class Counter extends Actor {
-  val occurencesByWord = collection.mutable.Map[String, Int]().withDefaultValue(0)
+  val instancesByWord: mutable.Map[String, Int] = collection.mutable.Map[String, Int]().withDefaultValue(0)
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case Counter.ManageRows(row) =>
       row.split(" ").foreach(word => addWordToMap(word))
     case Counter.GetOccurrences =>
-      sender ! occurencesByWord
+      sender ! instancesByWord
   }
   private def addWordToMap(word: String): Unit = {
-      occurencesByWord(word.toLowerCase()) += 1
+    instancesByWord(word.toLowerCase()) += 1
   }
 }
